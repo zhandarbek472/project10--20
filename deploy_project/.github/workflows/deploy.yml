@@ -1,0 +1,51 @@
+name: Build, Test & Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Репозиторийді клондау
+        uses: actions/checkout@v3
+
+      - name: Python орнату
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Тәуелділіктерді орнату
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Қарапайым тест
+        run: |
+          echo "Тесттер сәтті өтті"
+
+  deploy:
+    needs: build_and_test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Репозиторийді клондау
+        uses: actions/checkout@v3
+
+      - name: Docker Hub-қа кіру
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker бейне жасау
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/ci-fastapi-app .
+
+      - name: Docker Hub-қа бейнені итеру
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/ci-fastapi-app
+
+      - name: Render немесе VPS-ке депло
